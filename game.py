@@ -4,24 +4,23 @@
 
 import curses, time
 from curses import wrapper, panel
+
 stdscr = curses.initscr()
-curses.noecho()
-curses.cbreak()
-stdscr.keypad(True)
 curses.curs_set(0)
-pad = curses.newpad(curses.LINES,curses.COLS) # field
+
+menu = curses.newpad(curses.LINES,curses.COLS) # field
 
 # draw the borders around the screen, fancily
 def drawBorders(char='#'):
     horizBorder = char * (curses.COLS)
-    pad.addstr(0,0,horizBorder)
+    menu.addstr(0,0,horizBorder)
     for y in range(1,curses.LINES-1):
-        pad.refresh(0,0,0,0,curses.LINES,curses.COLS)
+        menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
         time.sleep(.01)
-        pad.addstr(y,0,char)
-        pad.addstr(y,curses.COLS-1,char)
-    pad.addstr(curses.LINES-1,0,horizBorder[:-1])
-    pad.refresh(0,0,0,0,curses.LINES,curses.COLS)
+        menu.addstr(y,0,char)
+        menu.addstr(y,curses.COLS-1,char)
+    menu.addstr(curses.LINES-1,0,horizBorder[:-1])
+    menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
 
 
 
@@ -55,9 +54,9 @@ def textWindow(y,x,string, topLeft=False):
 def mainMenu(stdscr):
     string = "ASCIIria Chronicles\n\n1 New Game\n\n2 Select Map\n\n3 Exit"
     (pan,win) = textWindow(curses.LINES/2,curses.COLS/2,string)
-    pad.addstr(curses.LINES-2,1,"v0.0.1 by Andrew Barry")
+    menu.addstr(curses.LINES-2,1,"v0.0.1 by Andrew Barry")
     pan.top()
-    pad.refresh(0,0,0,0,curses.LINES,curses.COLS)
+    menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
     win.refresh()
     while 1:
         c = stdscr.getch()
@@ -66,7 +65,7 @@ def mainMenu(stdscr):
             return selection
     return -1
 
-# do map selection screen
+# do map selection
 def mapSelect():
     maps = ["Test Map"]
     display = "SELECT YOUR MAP\n"
@@ -95,10 +94,14 @@ def closeGame():
     curses.echo()
     curses.endwin()
 
+# Coordinates the whole game
 def main(stdscr):
     if (curses.LINES < 50 or curses.COLS < 150):
         closeGame()
         return
+    curses.start_color()
+    curses.use_default_colors()
+    curses.init_pair(1,curses.COLOR_BLACK,curses.COLOR_WHITE)
     drawBorders() # fancy border drawing effect
     loadgame = True
     while loadgame: # MAIN MENU LOOP
@@ -112,12 +115,9 @@ def main(stdscr):
         elif (choice == 2):
             selectedMap = mapSelect()
         loadgame = selectedMap is "BACK"
-
-    # load map, select/place units, play game
-
-
+    
     while 1:
-        pad.refresh(0,0,0,0,curses.LINES,curses.COLS)
+        menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
         
 
 
