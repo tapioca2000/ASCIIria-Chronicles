@@ -11,7 +11,6 @@ class Scenario:
         curses.start_color()
         curses.use_default_colors()
         file = open(filename,'r')
-        out = open("out.txt",'w')
         lines = file.readlines()
         enemycount = int(lines[0])
         c = 1
@@ -27,8 +26,6 @@ class Scenario:
         for x in range(c+1,c+maplength+1):
             self.mapcolors.append(lines[x].strip("\n")[1:len(lines[x]):2])
             col = 0
-            out.write(lines[x].strip("\n")[0:len(lines[x]):2] + "\n")
             for ch in lines[x].strip("\n")[0:len(lines[x]):2]:
-                out.write(str(x-(c+1)) + " " + str(col) + " " + ch + " " + self.mapcolors[x-(c+1)][col] + "\n")
                 self.map.addch(x-(c+1),col,ch,curses.color_pair(int(self.mapcolors[x-(c+1)][col])))
                 col += 1
