@@ -10,11 +10,13 @@ stdscr = curses.initscr()
 
 class Game:
     # read list of available units from the text file units.txt
-    def __init__(self,scenario, mapy, mapx):
+    def __init__(self,scenario, mapy, mapx, map,win):
         self.scenario = scenario
         self.mapy = mapy
         self.mapx = mapx
+        self.map = map
         self.currentTurn = 0
+        self.win = win
         file = open('units.list','r')
         lines = file.readlines()
         self.playerUnits = []
@@ -46,19 +48,31 @@ class Game:
 
     # Pre-game: allow unit selections on self.scenario.openings[]
     def doPreGame(self):
-        out = open('out.txt','w')
         openspaces = self.scenario.openings
-        string = "Select " + str(len(openspaces)) + " more units.\n\n\tName\tType\tHP\tAtt"
-        for x in range(0,len(self.playerUnits)):
-            unit = self.playerUnits[x]
-            string = string + "\n" + selectionChars[x] + "\t" + unit.name + "\t" + unit.type + "\t" + str(unit.hp) + "\t" + str(unit.att) + "\n"
-        (pan,win) = textWindow(5,5,string,topLeft=True)
-        win.refresh()
-        pan.top()
-        c = 'placeholder'
-        while (selectionChars.find(c) == -1):
-            c = str(unichr(stdscr.getch()))
-        selectedunit = self.playerUnits[selectionChars.find(c)]
-        selectedposition = cursorOnPositions(openspaces,self.scenario.map)
-        # place unit here
-        openspaces.remove(selectedposition) # no longer free
+        while (len(openspaces) > 0):
+            curses.panel.update_panels()
+            self.win.refresh()
+            self.map.refresh(0,0,10,(curses.COLS/2 - 10),20,curses.COLS/2)
+            string = "Select " + str(len(openspaces)) + " more unit"
+            if (len(openspaces) > 1): string += "s"
+            string += ".\n\n\tName\tType\tHP\tAtt"
+            for x in range(0,len(self.playerUnits)):
+                unit = self.playerUnits[x]
+                string = string + "\n" + selectionChars[x] + "\t" + unit.name + "\t" + unit.type + "\t" + str(unit.hp) + "\t" + str(unit.att) + "\n"
+            (pan,msgbox) = textWindow(5,5,string,topLeft=True)
+            msgbox.refresh()
+            pan.top()
+            c = 'placeholder'
+            while (selectionChars.find(c) == -1):
+                c = str(unichr(stdscr.getch()))
+            selectedunit = self.playerUnits[selectionChars.find(c)]
+            selectedposition = cursorOnPositions([self.translate(nums, 10, (curses.COLS/2 - 10)) for nums in openspaces],self.win)
+            selectedunit.pos = openspaces[selectedposition] # give unit correct position
+            openspaces.remove(openspaces[selectedposition]) # remove space from list
+            self.scenario.addUnit(selectedunit) # add unit to map
+            self.playerUnits.remove(selectedunit) # remove unit from list
+            del pan
+            del msgbox
+            curses.panel.update_panels()
+            self.win.refresh()
+            self.map.refresh(0,0,10,(curses.COLS/2 - 10),20,curses.COLS/2)

@@ -40,6 +40,8 @@ def mainMenu():
         c = stdscr.getch()
         selection = c-48
         if (selection==1 or selection==2 or selection==3): # return choice
+            del pan
+            del win
             return selection
     return -1
 
@@ -58,10 +60,12 @@ def mapSelect():
         c = stdscr.getch()
         selection = c-48
         if (selection <= len(maps) and selection > 0):
-            pan.hide()
+            del pan
+            del win
             return maps[selection-1]
         elif (selection == 0):
-            pan.hide()
+            del pan
+            del win
             return "BACK"
 
 # set color pairs to what I want
@@ -103,11 +107,14 @@ def main(stdscr):
     filename = selectedMap.replace(" ","") + ".scn"
     scenario = Scenario(filename) # Create the scenario
     menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
-    gamePad = scenario.map
-    gamePad.refresh(0,0,10,(curses.COLS/2 - 10),20,curses.COLS/2)
 
+    gamePad = scenario.map
+    win = curses.newwin(curses.LINES,curses.COLS)
+    win.refresh()
+    gamePad.refresh(0,0,10,(curses.COLS/2 - 10),20,curses.COLS/2)
+    curses.panel.update_panels()
     # START PLAYING!
-    game = Game(scenario, 10, (curses.COLS/2 - 10)) # hardcoded numbers for now - This should be changed later to center in the window
+    game = Game(scenario, 10, (curses.COLS/2 - 10), gamePad, win) # hardcoded numbers for now - This should be changed later to center in the window
     while 1:
         game.doNextTurn()
 

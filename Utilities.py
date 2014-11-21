@@ -2,21 +2,24 @@
 import curses
 
 stdscr = curses.initscr()
+curses.start_color()
+curses.use_default_colors()
 
 # Allow the user to use a cursor to select between the given positions
 # Returns the index of the position selected
 def cursorOnPositions(positions, window):
-    curses.curs_set(1)
     selecting = True
     posit = 0
     y = positions[posit][0]
     x = positions[posit][1]
     while selecting:
-        window.move(y,x)
+        oldchar = chr(window.inch(y,x) & 0xFF)
+        window.addch(y,x,"X",curses.color_pair(1))
+        window.refresh()
         ch = stdscr.getch()
-        if (ch == curses.KEY_ENTER): # exit loop
+        if (ch == 10): # warning: may not work on all terminals/operating systems
             selecting = False
-        elif (ch == curses.KEY_LEFT): # go left
+        elif (ch == curses.KEY_LEFT):
             if (posit-1 < 0):
                 posit = len(positions)
             posit -= 1
@@ -24,9 +27,10 @@ def cursorOnPositions(positions, window):
             if (posit+1 == len(positions)):
                 posit = -1
             posit += 1
+        window.addch(y,x,oldchar,curses.color_pair(4))
         y = positions[posit][0]
         x = positions[posit][1]
-    curses.curs_set(0)
+        window.refresh()
     return posit
 
 # Creates a new window, displays text centered around (y,x) and returns the window for potential usage

@@ -41,3 +41,10 @@ class Scenario:
         for unit in self.units:
             posit = unit.pos
             self.map.addch(posit[1],posit[0],unit.type,curses.color_pair(1)) # red because Imperals
+
+    # add unit to units list, update map
+    def addUnit(self,unit):
+        self.units.append(unit)
+        if (unit.friendly): color = 4
+        else: color = 1
+        self.map.addch(unit.pos[0],unit.pos[1],unit.type,curses.color_pair(color))
