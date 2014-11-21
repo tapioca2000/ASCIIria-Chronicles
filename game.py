@@ -1,10 +1,14 @@
 # ASCIIria Chronicles
 
 # nbsp: 
+# padrefresh(padstarty,padstartx,inwindowstarty,inwindowstartx,inwindowclosey,inwindowclosex)
+
 
 import curses, time
 from curses import wrapper, panel
 from Scenario import Scenario
+from Engine import Game
+from Utilities import textWindow
 
 maps = ["Test Map"] # TODO: generate this list by reading for .scn files
 stdscr = curses.initscr()
@@ -24,35 +28,8 @@ def drawBorders(char='#'):
     menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
 
 
-
-# Creates a new window, displays text centered around (y,x) and returns the window for potential usage
-# Will make y,x the top left corner if specified
-def textWindow(y,x,string, topLeft=False):
-    halfwidth = -1
-    halfheight = -1
-    linestrings = []
-    max = -1
-    linestrings = string.split("\n")
-    lines = string.count("\n") + 1
-    max = ""
-    for s in linestrings:
-        if len(s) > len(max):
-            max = s
-    max = len(max)
-    halfwidth = (max+4)/2
-    halfheight = (len(linestrings)+4)/2
-    if (topLeft):
-        next = curses.newwin(4 + len(linestrings),4 + max,y,x)
-    else:
-        next = curses.newwin(4 + len(linestrings),4 + max, int(y-halfwidth),int(x-halfheight))
-    next.box()
-    pan = curses.panel.new_panel(next)
-    for i in range(0,lines):
-        next.addstr(i+2,2,linestrings[i])
-    return (pan,next)
-
 # do main menu
-def mainMenu(stdscr):
+def mainMenu():
     string = "ASCIIria Chronicles\n\n1 New Game\n\n2 Select Map\n\n3 Exit"
     (pan,win) = textWindow(curses.LINES/2,curses.COLS/2,string)
     menu.addstr(curses.LINES-2,1,"v0.0.1 by Andrew Barry",curses.color_pair(1))
@@ -81,15 +58,18 @@ def mapSelect():
         c = stdscr.getch()
         selection = c-48
         if (selection <= len(maps) and selection > 0):
+            pan.hide()
             return maps[selection-1]
         elif (selection == 0):
+            pan.hide()
             return "BACK"
 
 # set color pairs to what I want
 def initColors():
     curses.init_pair(1,curses.COLOR_RED,-1)
     curses.init_pair(4,curses.COLOR_BLUE,-1)
-    curses.init_pair(7,curses.COLOR_BLUE,-1)
+    curses.init_pair(7,curses.COLOR_BLUE,curses.COLOR_BLUE)
+
 
 # ends the program
 def closeGame():
@@ -99,7 +79,7 @@ def closeGame():
     curses.endwin()
 
 
-# Coordinates the whole game
+# Starts the game
 def main(stdscr):
     if (curses.LINES < 50 or curses.COLS < 150):
         closeGame()
@@ -110,7 +90,7 @@ def main(stdscr):
     drawBorders() # fancy border drawing effect
     loadgame = True
     while loadgame: # MAIN MENU LOOP
-        choice = mainMenu(stdscr) # do main menu everything
+        choice = mainMenu() # do main menu everything
         selectedMap = 0
         if (choice == 3):
             closeGame()
@@ -122,10 +102,14 @@ def main(stdscr):
         loadgame = selectedMap is "BACK"
     filename = selectedMap.replace(" ","") + ".scn"
     scenario = Scenario(filename) # Create the scenario
-    pad = scenario.map
     menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
+    gamePad = scenario.map
+    gamePad.refresh(0,0,10,(curses.COLS/2 - 10),20,curses.COLS/2)
+
+    # START PLAYING!
+    game = Game(scenario, 10, (curses.COLS/2 - 10)) # hardcoded numbers for now - This should be changed later to center in the window
     while 1:
-        pad.refresh(0,0,10,10,20,20)
+        game.doNextTurn()
 
 
 curses.wrapper(main)
