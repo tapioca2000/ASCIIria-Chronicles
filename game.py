@@ -4,6 +4,9 @@
 # padrefresh(padstarty,padstartx,inwindowstarty,inwindowstartx,inwindowclosey,inwindowclosex)
 
 
+# Currently fixing a few small issues
+# next major todo: dynamic placement of window ( sort of almost implemented already just needs a few lines )
+
 import curses, time
 from curses import wrapper, panel
 from Scenario import Scenario
@@ -13,28 +16,29 @@ from Utilities import textWindow
 maps = ["Test Map"] # TODO: generate this list by reading for .scn files
 stdscr = curses.initscr()
 curses.curs_set(0)
-menu = curses.newpad(curses.LINES,curses.COLS) # field
+#menu = curses.newwin(curses.LINES,curses.COLS)
 
 # draw the borders around the screen, fancily
+'''
 def drawBorders(char='#'):
     horizBorder = char * (curses.COLS)
     menu.addstr(0,0,horizBorder)
     for y in range(1,curses.LINES-1):
-        menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
+        menu.refresh()
         time.sleep(.01)
         menu.addstr(y,0,char)
         menu.addstr(y,curses.COLS-1,char)
     menu.addstr(curses.LINES-1,0,horizBorder[:-1])
-    menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
-
+    menu.refresh()
+'''
 
 # do main menu
 def mainMenu():
     string = "ASCIIria Chronicles\n\n1 New Game\n\n2 Select Map\n\n3 Exit"
     (pan,win) = textWindow(curses.LINES/2,curses.COLS/2,string)
-    menu.addstr(curses.LINES-2,1,"v0.0.1 by Andrew Barry",curses.color_pair(1))
+#    menu.addstr(curses.LINES-2,1,"v0.0.1 by Andrew Barry",curses.color_pair(1))
     pan.top()
-    menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
+#    menu.refresh()
     win.refresh()
     while 1:
         c = stdscr.getch()
@@ -71,6 +75,7 @@ def mapSelect():
 # set color pairs to what I want
 def initColors():
     curses.init_pair(1,curses.COLOR_RED,-1)
+    curses.init_pair(2,curses.COLOR_WHITE,curses.COLOR_BLACK)
     curses.init_pair(4,curses.COLOR_BLUE,-1)
     curses.init_pair(7,curses.COLOR_BLUE,curses.COLOR_BLUE)
 
@@ -91,7 +96,7 @@ def main(stdscr):
     curses.start_color()
     curses.use_default_colors()
     initColors()
-    drawBorders() # fancy border drawing effect
+#    drawBorders() # fancy border drawing effect
     loadgame = True
     while loadgame: # MAIN MENU LOOP
         choice = mainMenu() # do main menu everything
@@ -105,16 +110,17 @@ def main(stdscr):
             selectedMap = mapSelect()
         loadgame = selectedMap is "BACK"
     filename = selectedMap.replace(" ","") + ".scn"
-    scenario = Scenario(filename) # Create the scenario
-    menu.refresh(0,0,0,0,curses.LINES,curses.COLS)
-
-    gamePad = scenario.map
-    win = curses.newwin(curses.LINES,curses.COLS)
-    win.refresh()
-    gamePad.refresh(0,0,10,(curses.COLS/2 - 10),20,curses.COLS/2)
+    mapx = (curses.COLS/2) - 10
+    mapy = 10
+    scenario = Scenario(filename,mapy,mapx) # Create the scenario
+    
+    mapPan = scenario.mapPan()
+    mapPan.bottom()
+    mapPan.move(mapy,mapx)
     curses.panel.update_panels()
+
     # START PLAYING!
-    game = Game(scenario, 10, (curses.COLS/2 - 10), gamePad, win) # hardcoded numbers for now - This should be changed later to center in the window
+    game = Game(scenario, mapPan)
     while 1:
         game.doNextTurn()
 

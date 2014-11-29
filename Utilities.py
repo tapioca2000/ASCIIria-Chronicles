@@ -7,6 +7,7 @@ curses.use_default_colors()
 
 # Allow the user to use a cursor to select between the given positions
 # Returns the index of the position selected
+# This needs some major bugfixing - TODO
 def cursorOnPositions(positions, window):
     selecting = True
     posit = 0
@@ -58,3 +59,12 @@ def textWindow(y,x,string, topLeft=False):
     for i in range(0,lines):
         next.addstr(i+2,2,linestrings[i])
     return (pan,next)
+
+# write a "status bar" of a certain length, with the string
+# returns it as a panel
+def writeBar(y, x, length, string):
+    win = curses.newwin(1,length+1,y,x)
+    pan = curses.panel.new_panel(win)
+    wStr = string + (" "*(length-len(string)))
+    win.addstr(0,0,wStr,curses.color_pair(2))
+    return [pan,win]

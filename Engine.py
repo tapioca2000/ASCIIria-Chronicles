@@ -2,21 +2,22 @@
 # 
 from Scenario import Scenario
 from Unit import Unit
-from Utilities import textWindow, cursorOnPositions
+from Utilities import textWindow, cursorOnPositions, writeBar
 import curses
 
+unittypes = {"T":"Tank","S":"Scout","H":"sHocktrooper","L":"Lancer","E":"Engineer","N":"sNiper"}
 selectionChars = "0123456789abcdefghijklmnopqrstuvwxyz" # up to 36 units!
 stdscr = curses.initscr()
 
 class Game:
     # read list of available units from the text file units.txt
-    def __init__(self,scenario, mapy, mapx, map,win):
+    def __init__(self,scenario, map):
         self.scenario = scenario
-        self.mapy = mapy
-        self.mapx = mapx
+        self.mapy = scenario.mapy
+        self.mapx = scenario.mapx
         self.map = map
         self.currentTurn = 0
-        self.win = win
+        self.cp = 0
         file = open('units.list','r')
         lines = file.readlines()
         self.playerUnits = []
@@ -24,14 +25,17 @@ class Game:
             attrs = line.split("/")
             pos = [-1,-1] # no position set yet!
             self.playerUnits.append(Unit(attrs[0],attrs[1],attrs[2],attrs[3],pos,True))
+            self.cp += 1
+            if (attrs[1] == 'T'): # CP boost while tank is alive (TODO: leader attribute)
+                self.cp += 1
             
     # take turns
     def doNextTurn(self):
         if (self.currentTurn == 0):
             self.doPreGame()
-            turn = 1
+            self.currentTurn += .5
         elif (int(self.currentTurn) == self.currentTurn): # player turn
-            #self.doPlayerTurn()
+            self.doPlayerTurn()
             self.currentTurn += .5
         else: # enemy turn
             #self.doEnemyTurn()
@@ -39,7 +43,7 @@ class Game:
 
 
     # translate nums like (+y,+x) so that it is in context of the whole window 
-    # (used when using a cursor to select anything in scenario.map)
+    # (used when using a cursor to select anything in self.scenario.map)
     def translate(self,nums,y,x):
         new = [nums[0],nums[1]]
         new[0] += y
@@ -49,10 +53,11 @@ class Game:
     # Pre-game: allow unit selections on self.scenario.openings[]
     def doPreGame(self):
         openspaces = self.scenario.openings
-        while (len(openspaces) > 0):
+        outfile = open("outa.txt",'w')
+        while (len(openspaces) > -1): # unit placement loop
+            self.scenario.updateMap()
+            self.map = self.scenario.mapPan()
             curses.panel.update_panels()
-            self.win.refresh()
-            self.map.refresh(0,0,10,(curses.COLS/2 - 10),20,curses.COLS/2)
             string = "Select " + str(len(openspaces)) + " more unit"
             if (len(openspaces) > 1): string += "s"
             string += ".\n\n\tName\tType\tHP\tAtt"
@@ -65,14 +70,73 @@ class Game:
             c = 'placeholder'
             while (selectionChars.find(c) == -1):
                 c = str(unichr(stdscr.getch()))
+            del pan
+            del msgbox
+            outfile.write("Unit " + self.playerUnits[selectionChars.find(c)].name + " selected, adding\n")
             selectedunit = self.playerUnits[selectionChars.find(c)]
-            selectedposition = cursorOnPositions([self.translate(nums, 10, (curses.COLS/2 - 10)) for nums in openspaces],self.win)
-            selectedunit.pos = openspaces[selectedposition] # give unit correct position
+            selectedposition = cursorOnPositions(openspaces,self.map.window())
+            selectedunit.pos = self.scenario.openings[selectedposition] # give unit correct position
             openspaces.remove(openspaces[selectedposition]) # remove space from list
             self.scenario.addUnit(selectedunit) # add unit to map
             self.playerUnits.remove(selectedunit) # remove unit from list
-            del pan
-            del msgbox
+            outfile.write("Stuff done for real\n")
+            self.scenario.updateMap()
+            self.map = self.scenario.mapPan()
+            self.map.top()
             curses.panel.update_panels()
-            self.win.refresh()
-            self.map.refresh(0,0,10,(curses.COLS/2 - 10),20,curses.COLS/2)
+        outfile.write("I ESCAPED THE LOOP")
+
+    # Do a player turn
+    def doPlayerTurn(self):
+        outfile = file('outt.txt','w')
+        outfile.write("WE GOT INTO DOPLAYERTURN")
+
+
+        (textPan, textWin) = textWindow(20,20,"AASLLSDLKLKD")
+        curses.panel.update_panels()
+
+        infoString = "[e] End Turn | [Arrow Keys] Select Unit | [Enter] Use Unit"
+        thisTurnCP = self.cp
+        cpString = "CP: " + ("X"*thisTurnCP)
+        (cpPan,cpWin) = writeBar(3,1,curses.COLS-2,cpString)
+        cpPan.top()
+        curses.panel.update_panels()
+        highlightedunit = 0
+        ch = 99
+        while (ch != 101): # entire turn loop
+            self.scenario.updateMap()
+            self.map = self.scenario.mapPan()
+            self.map.top()
+            (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,infoString)
+            infoPan.top()
+            curses.panel.update_panels()
+
+            ch = stdscr.getch()
+
+            redoInfo = (ch == curses.KEY_LEFT or ch == curses.KEY_RIGHT) # redo unit info bar if 
+            if (ch == curses.KEY_LEFT): # Highlight unit on the left
+                highlightedunit -= 1
+                if (highlightedunit == -1): highlightedunit = len(self.scenario.friendlyunits) - 1
+            elif (ch == curses.KEY_RIGHT): # Highlight unit on the right
+                highlightedunit += 1
+                if (highlightedunit == len(self.scenario.friendlyunits)): highlightedunit = 0
+            elif (ch == 10): # Enter movement mode for this unit
+                thisTurnCP -= 1
+                cpString = "CP: " + ("X"*thisTurnCP)
+                (cpPan,cpWin) = writeBar(3,1,curses.COLS-2,cpString)
+                self.movementMode(self.scenario.friendlyunits[highlightedunit])
+            if (redoInfo): # info window needs redrawing
+                thisunit = self.scenario.friendlyunits[highlightedunit]
+                unitinfo = "Name\tType\tHP\tAtt\n" + thisunit.name + "\t" +unittypes[thisunit.type] + "\t" + thisunit.hp + "\t" + thisunit.att
+                (unitPan,unitWin) = textWindow(20,20,unitinfo,topLeft=True)
+
+    # active movement of a unit: TODO
+    # update the infoPan to have controls
+    def movementMode(self,unit):
+        (panel,window) = textWindow(curses.LINES,curses.COLS,"You've selected " + unit.name)
+        curses.panel.update_panels()
+        ch = stdscr.getch()
+        del panel
+        del window
+        #(infoPan,infoWin) = writeBar(3,1,curses.COLS-2,"[Arrow Keys] move | [F] fire | [E] end movement")
+        #infoPan.top()
