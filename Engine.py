@@ -54,7 +54,7 @@ class Game:
     def doPreGame(self):
         openspaces = self.scenario.openings
         outfile = open("outa.txt",'w')
-        while (len(openspaces) > -1): # unit placement loop
+        while (len(openspaces) > 0): # unit placement loop
             self.scenario.updateMap()
             self.map = self.scenario.mapPan()
             curses.panel.update_panels()
@@ -88,32 +88,43 @@ class Game:
 
     # Do a player turn
     def doPlayerTurn(self):
-        outfile = file('outt.txt','w')
-        outfile.write("WE GOT INTO DOPLAYERTURN")
 
-
-        (textPan, textWin) = textWindow(20,20,"AASLLSDLKLKD")
-        curses.panel.update_panels()
 
         infoString = "[e] End Turn | [Arrow Keys] Select Unit | [Enter] Use Unit"
         thisTurnCP = self.cp
         cpString = "CP: " + ("X"*thisTurnCP)
         (cpPan,cpWin) = writeBar(3,1,curses.COLS-2,cpString)
+        cpWin.refresh()
         cpPan.top()
         curses.panel.update_panels()
         highlightedunit = 0
         ch = 99
+        
+        redoInfo = False
+        thisunit = self.scenario.friendlyunits[highlightedunit]
+        unitinfo = "Name " + thisunit.name + "\nType " + unittypes[thisunit.type] + "\nHealth " + thisunit.hp + "\nAttack " + thisunit.att
+        (unitPan,unitWin) = textWindow(20,20,unitinfo,topLeft=True)
+        unitWin.refresh()
+
         while (ch != 101): # entire turn loop
             self.scenario.updateMap()
             self.map = self.scenario.mapPan()
-            self.map.top()
             (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,infoString)
-            infoPan.top()
+            infoWin.refresh()
+            if (redoInfo): # change the unit info window
+                del unitPan
+                del unitWin
+                curses.panel.update_panels()
+                thisunit = self.scenario.friendlyunits[highlightedunit]
+                unitinfo = "Name " + thisunit.name + "\nType " + unittypes[thisunit.type] + "\nHealth " + thisunit.hp + "\nAttack "+ thisunit.att
+                (unitPan,unitWin) = textWindow(20,20,unitinfo,topLeft=True)
+                unitWin.refresh()
+                redoInfo = False
             curses.panel.update_panels()
 
             ch = stdscr.getch()
 
-            redoInfo = (ch == curses.KEY_LEFT or ch == curses.KEY_RIGHT) # redo unit info bar if 
+            redoInfo = (ch == curses.KEY_LEFT or ch == curses.KEY_RIGHT) # redo unit info panel if new unit selected
             if (ch == curses.KEY_LEFT): # Highlight unit on the left
                 highlightedunit -= 1
                 if (highlightedunit == -1): highlightedunit = len(self.scenario.friendlyunits) - 1
@@ -125,18 +136,16 @@ class Game:
                 cpString = "CP: " + ("X"*thisTurnCP)
                 (cpPan,cpWin) = writeBar(3,1,curses.COLS-2,cpString)
                 self.movementMode(self.scenario.friendlyunits[highlightedunit])
-            if (redoInfo): # info window needs redrawing
-                thisunit = self.scenario.friendlyunits[highlightedunit]
-                unitinfo = "Name\tType\tHP\tAtt\n" + thisunit.name + "\t" +unittypes[thisunit.type] + "\t" + thisunit.hp + "\t" + thisunit.att
-                (unitPan,unitWin) = textWindow(20,20,unitinfo,topLeft=True)
 
     # active movement of a unit: TODO
-    # update the infoPan to have controls
     def movementMode(self,unit):
-        (panel,window) = textWindow(curses.LINES,curses.COLS,"You've selected " + unit.name)
+        (panel,window) = textWindow(curses.LINES/2,curses.COLS/2,"You've selected " + unit.name)
+        window.refresh()
+        panel.top()
         curses.panel.update_panels()
         ch = stdscr.getch()
         del panel
         del window
+        curses.panel.update_panels()
         #(infoPan,infoWin) = writeBar(3,1,curses.COLS-2,"[Arrow Keys] move | [F] fire | [E] end movement")
         #infoPan.top()

@@ -45,9 +45,9 @@ def textWindow(y,x,string, topLeft=False):
     lines = string.count("\n") + 1
     max = ""
     for s in linestrings:
-        if (len(s) + (s.count("\t")*5)) > len(max): # note that tabs = 5 spaces
+        if (len(s) + (s.count("\t")*7)) > len(max): # note that tabs = 7 spaces, for convenience
             max = s
-    max = len(max) + (max.count("\t")*5)
+    max = len(max) + (max.count("\t")*7)
     halfwidth = (max+4)/2
     halfheight = (len(linestrings)+4)/2
     if (topLeft):
