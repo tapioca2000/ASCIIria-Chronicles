@@ -5,7 +5,9 @@ from Unit import Unit
 from Utilities import textWindow, cursorOnPositions, writeBar
 import curses
 
-unittypes = {"T":"Tank","S":"Scout","H":"sHocktrooper","L":"Lancer","E":"Engineer","N":"sNiper"}
+unittypes = {"T":"Tank","S":"Scout","H":"sHocktrooper","L":"Lancer","E":"Engineer","N":"sNiper"} # full unit names
+unitAPs = {"T":5,"S":15,"H":7,"L":5,"E":13,"N":6} # unit movement ranges
+
 selectionChars = "0123456789abcdefghijklmnopqrstuvwxyz" # up to 36 units!
 stdscr = curses.initscr()
 
@@ -88,7 +90,7 @@ class Game:
 
         infoString = "[e] End Turn | [Arrow Keys] Select Unit | [Enter] Use Unit"
         thisTurnCP = self.cp
-        cpString = "CP: " + ("X"*thisTurnCP)
+        cpString = "CP: " + ("X "*thisTurnCP)
         (cpPan,cpWin) = writeBar(3,1,curses.COLS-2,cpString)
         cpWin.refresh()
         cpPan.top()
@@ -117,6 +119,8 @@ class Game:
             self.map.window().chgat(thisunit.pos[0], thisunit.pos[1],1,curses.color_pair(3))
             self.map.window().refresh()
             (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,infoString)
+            (cpPan,cpWin) = writeBar(3,1,curses.COLS-2,cpString)
+            cpWin.refresh()
             infoWin.refresh()
 
 
@@ -133,19 +137,40 @@ class Game:
                 if (highlightedunit == len(self.scenario.friendlyunits)): highlightedunit = 0
             elif (ch == 10): # Enter movement mode for this unit
                 thisTurnCP -= 1
-                cpString = "CP: " + ("X"*thisTurnCP)
-                (cpPan,cpWin) = writeBar(3,1,curses.COLS-2,cpString)
+                cpString = "CP: " + ("X "*thisTurnCP)
                 self.movementMode(self.scenario.friendlyunits[highlightedunit])
 
     # active movement of a unit: TODO
     def movementMode(self,unit):
-        (panel,window) = textWindow(curses.LINES/2,curses.COLS/2,"You've selected " + unit.name)
-        window.refresh()
-        panel.top()
+        ap = unitAPs[unit.type]
+
+        (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,"[Arrow Keys] move | [F] fire | [S] switch weapon | [E] end movement")
+        infoWin.refresh()
+        infoPan.top()
+        (apPan,apWin) = writeBar(3,1,curses.COLS-2,("AP: " + ("X "*ap)))
         curses.panel.update_panels()
-        ch = stdscr.getch()
-        del panel
-        del window
-        curses.panel.update_panels()
-        #(infoPan,infoWin) = writeBar(3,1,curses.COLS-2,"[Arrow Keys] move | [F] fire | [E] end movement")
-        #infoPan.top()
+        ch = 99
+
+        while (ch != 101):
+            self.scenario.updateMap()
+            self.map = self.scenario.mapPan()
+            self.map.window().refresh()
+            curses.panel.update_panels()
+
+            ch = stdscr.getch()
+
+            if (ch == 102): # F was pressed, enter fire mode
+                print("TODO")
+            elif (ch == 115): # S was pressed, switch weapons
+                print("TODO") # weapons not actually implemented yet
+
+            elif (ch == curses.KEY_LEFT): # move left
+                unit.move_left()
+            elif (ch == curses.KEY_RIGHT): # move right
+                unit.move_right()
+            elif (ch == curses.KEY_UP): # move up
+                unit.move_up()
+            elif (ch == curses.KEY_DOWN): # move down
+                unit.move_down()
+
+            

@@ -11,6 +11,12 @@ class Unit:
         self.pos = pos
         self.friendly = friendly
 
-    # Things that need doing here:
-    # AI methods
-    # getAttack/takeDamage
+    # movement (assume that the space to be moved to is free)
+    def move_left(self):
+        self.pos[1] -= 1
+    def move_right(self):
+        self.pos[1] += 1
+    def move_up(self):
+        self.pos[0] -= 1
+    def move_down(self):
+        self.pos[0] += 1
