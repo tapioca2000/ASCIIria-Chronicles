@@ -7,15 +7,13 @@ curses.use_default_colors()
 
 # Allow the user to use a cursor to select between the given positions
 # Returns the index of the position selected
-# This needs some major bugfixing - TODO
 def cursorOnPositions(positions, window):
     selecting = True
     posit = 0
     y = positions[posit][0]
     x = positions[posit][1]
     while selecting:
-        oldchar = chr(window.inch(y,x) & 0xFF)
-        window.addch(y,x,"X",curses.color_pair(1))
+        window.chgat(y,x,1,curses.color_pair(3))
         window.refresh()
         ch = stdscr.getch()
         if (ch == 10): # warning: may not work on all terminals/operating systems
@@ -28,14 +26,14 @@ def cursorOnPositions(positions, window):
             if (posit+1 == len(positions)):
                 posit = -1
             posit += 1
-        window.addch(y,x,oldchar,curses.color_pair(4))
+        window.chgat(y,x,1,curses.color_pair(0))
         y = positions[posit][0]
         x = positions[posit][1]
         window.refresh()
     return posit
 
 # Creates a new window, displays text centered around (y,x) and returns the window for potential usage
-# Will make y,x the top left corner if specified                                                                                                             
+# Will make y,x the top left corner if specified
 def textWindow(y,x,string, topLeft=False):
     halfwidth = -1
     halfheight = -1

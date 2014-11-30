@@ -53,7 +53,6 @@ class Game:
     # Pre-game: allow unit selections on self.scenario.openings[]
     def doPreGame(self):
         openspaces = self.scenario.openings
-        outfile = open("outa.txt",'w')
         while (len(openspaces) > 0): # unit placement loop
             self.scenario.updateMap()
             self.map = self.scenario.mapPan()
@@ -72,19 +71,16 @@ class Game:
                 c = str(unichr(stdscr.getch()))
             del pan
             del msgbox
-            outfile.write("Unit " + self.playerUnits[selectionChars.find(c)].name + " selected, adding\n")
             selectedunit = self.playerUnits[selectionChars.find(c)]
             selectedposition = cursorOnPositions(openspaces,self.map.window())
             selectedunit.pos = self.scenario.openings[selectedposition] # give unit correct position
             openspaces.remove(openspaces[selectedposition]) # remove space from list
             self.scenario.addUnit(selectedunit) # add unit to map
             self.playerUnits.remove(selectedunit) # remove unit from list
-            outfile.write("Stuff done for real\n")
             self.scenario.updateMap()
             self.map = self.scenario.mapPan()
             self.map.top()
             curses.panel.update_panels()
-        outfile.write("I ESCAPED THE LOOP")
 
     # Do a player turn
     def doPlayerTurn(self):
@@ -107,10 +103,6 @@ class Game:
         unitWin.refresh()
 
         while (ch != 101): # entire turn loop
-            self.scenario.updateMap()
-            self.map = self.scenario.mapPan()
-            (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,infoString)
-            infoWin.refresh()
             if (redoInfo): # change the unit info window
                 del unitPan
                 del unitWin
@@ -120,6 +112,14 @@ class Game:
                 (unitPan,unitWin) = textWindow(20,20,unitinfo,topLeft=True)
                 unitWin.refresh()
                 redoInfo = False
+            self.scenario.updateMap()
+            self.map = self.scenario.mapPan()
+            self.map.window().chgat(thisunit.pos[0], thisunit.pos[1],1,curses.color_pair(3))
+            self.map.window().refresh()
+            (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,infoString)
+            infoWin.refresh()
+
+
             curses.panel.update_panels()
 
             ch = stdscr.getch()

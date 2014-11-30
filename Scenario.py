@@ -45,8 +45,6 @@ class Scenario:
 
     # add unit to units list, update map
     def addUnit(self,unit):
-        outfile = file("outfile.txt",'w')
-        outfile.write("Adding " + unit.name + " to the unit lists\n")
         if (unit.friendly):
             self.friendlyunits.append(unit)
         else:
@@ -54,7 +52,6 @@ class Scenario:
 
     # update window the panel is based on
     def updateMap(self):
-        out = open("outfilee.txt",'w')
         self.map = curses.newwin(self.maplength,self.maplength+1, self.mapy, self.mapx)
         for x in range(0,len(self.rawmap)):
             col = 0
@@ -63,7 +60,6 @@ class Scenario:
                 self.map.addch(x,col,ch,curses.color_pair(color))
                 col += 1
         for unit in self.friendlyunits:
-            out.write("Adding " + unit.name + " to board at " + str(unit.pos) + "\n")
             self.map.addch(unit.pos[0],unit.pos[1],unit.type,curses.color_pair(4))
         for unit in self.enemyunits:
             self.map.addch(unit.pos[0],unit.pos[1],unit.type,curses.color_pair(1))

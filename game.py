@@ -4,9 +4,6 @@
 # padrefresh(padstarty,padstartx,inwindowstarty,inwindowstartx,inwindowclosey,inwindowclosex)
 
 
-# Currently fixing a few small issues
-# next major todo: dynamic placement of window ( sort of almost implemented already just needs a few lines )
-
 import curses, time
 from curses import wrapper, panel
 from Scenario import Scenario
@@ -16,9 +13,8 @@ from Utilities import textWindow
 maps = ["Test Map"] # TODO: generate this list by reading for .scn files
 stdscr = curses.initscr()
 curses.curs_set(0)
-#menu = curses.newwin(curses.LINES,curses.COLS)
 
-# draw the borders around the screen, fancily
+# draw the borders around the screen, fancily (not used anymore)
 '''
 def drawBorders(char='#'):
     horizBorder = char * (curses.COLS)
@@ -36,9 +32,7 @@ def drawBorders(char='#'):
 def mainMenu():
     string = "ASCIIria Chronicles\n\n1 New Game\n\n2 Select Map\n\n3 Exit"
     (pan,win) = textWindow(curses.LINES/2,curses.COLS/2,string)
-#    menu.addstr(curses.LINES-2,1,"v0.0.1 by Andrew Barry",curses.color_pair(1))
     pan.top()
-#    menu.refresh()
     win.refresh()
     while 1:
         c = stdscr.getch()
@@ -74,10 +68,11 @@ def mapSelect():
 
 # set color pairs to what I want
 def initColors():
-    curses.init_pair(1,curses.COLOR_RED,-1)
-    curses.init_pair(2,curses.COLOR_WHITE,curses.COLOR_BLACK)
-    curses.init_pair(4,curses.COLOR_BLUE,-1)
-    curses.init_pair(7,curses.COLOR_BLUE,curses.COLOR_BLUE)
+    curses.init_pair(1,curses.COLOR_RED,-1) # red (typically denotes enemy unit)
+    curses.init_pair(2,curses.COLOR_WHITE,curses.COLOR_BLACK) # white on black (for text bars)
+    curses.init_pair(3,curses.COLOR_BLACK,curses.COLOR_YELLOW) # black on yellow (highlighting)
+    curses.init_pair(4,curses.COLOR_BLUE,-1) # blue (typically denotes player unit)
+    curses.init_pair(7,curses.COLOR_BLUE,curses.COLOR_BLUE) # blue on blue (water)
 
 
 # ends the program
@@ -96,7 +91,6 @@ def main(stdscr):
     curses.start_color()
     curses.use_default_colors()
     initColors()
-#    drawBorders() # fancy border drawing effect
     loadgame = True
     while loadgame: # MAIN MENU LOOP
         choice = mainMenu() # do main menu everything
