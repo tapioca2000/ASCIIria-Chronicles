@@ -2,7 +2,7 @@
 # 
 from Scenario import Scenario
 from Unit import Unit
-from Utilities import textWindow, cursorOnPositions, writeBar
+from Utilities import textWindow, cursorOnPositions, writeBar, freespace
 import curses
 
 unittypes = {"T":"Tank","S":"Scout","H":"sHocktrooper","L":"Lancer","E":"Engineer","N":"sNiper"} # full unit names
@@ -43,14 +43,6 @@ class Game:
             #self.doEnemyTurn()
             self.currentTurn += .5
 
-
-    # translate nums like (+y,+x) so that it is in context of the whole window 
-    # (used when using a cursor to select anything in self.scenario.map)
-    def translate(self,nums,y,x):
-        new = [nums[0],nums[1]]
-        new[0] += y
-        new[1] += x
-        return new
 
     # Pre-game: allow unit selections on self.scenario.openings[]
     def doPreGame(self):
@@ -165,12 +157,14 @@ class Game:
                 print("TODO") # weapons not actually implemented yet
 
             elif (ch == curses.KEY_LEFT): # move left
-                unit.move_left()
+                if (freespace(self.scenario,[unit.pos[0],unit.pos[1]-1])):
+                    unit.move_left()
             elif (ch == curses.KEY_RIGHT): # move right
-                unit.move_right()
+                if (freespace(self.scenario,[unit.pos[0],unit.pos[1]+1])):
+                    unit.move_right()
             elif (ch == curses.KEY_UP): # move up
-                unit.move_up()
+                if (freespace(self.scenario,[unit.pos[0]-1,unit.pos[1]])):
+                    unit.move_up()
             elif (ch == curses.KEY_DOWN): # move down
-                unit.move_down()
-
-            
+                if (freespace(self.scenario,[unit.pos[0]+1,unit.pos[1]])):
+                    unit.move_down()

@@ -66,3 +66,10 @@ def writeBar(y, x, length, string):
     wStr = string + (" "*(length-len(string)))
     win.addstr(0,0,wStr,curses.color_pair(2))
     return [pan,win]
+
+# returns true if pos[0],pos[1] is a valid space that can be walked on by a unit
+def freespace(scenario,pos):
+    if (pos[0] == len(scenario.rawmap)): return False # do this first so we don't crash on the next line
+    row = scenario.rawmap[pos[0]]
+    walls = scenario.wallchars
+    return not(pos[1] == len(row) or pos[1] < 0 or pos[0] < 0) and walls.find(row[pos[1]]) == -1

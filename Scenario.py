@@ -25,6 +25,8 @@ class Scenario:
             pos = [int(attrs[4]),int(attrs[5])]
             self.enemyunits.append(Unit(attrs[0],attrs[1],attrs[2],attrs[3],pos,False))
             c += 1
+        self.wallchars = lines[c]
+        c += 1
         maplength = int(lines[c])
         self.maplength = maplength
         self.map = curses.newwin(maplength,maplength + 1) # map, without any units
