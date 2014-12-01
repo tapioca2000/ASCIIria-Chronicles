@@ -1,5 +1,6 @@
 # heavily used functions
 import curses
+from Weapon import Weapon
 
 stdscr = curses.initscr()
 curses.start_color()
@@ -73,3 +74,19 @@ def freespace(scenario,pos):
     row = scenario.rawmap[pos[0]]
     walls = scenario.wallchars
     return not(pos[1] == len(row) or pos[1] < 0 or pos[0] < 0) and walls.find(row[pos[1]]) == -1
+
+# create the weapons dictionary by reading from weapons.list, return it
+def readWeaponList(filename):
+    out = open("out.txt",'w')
+    file = open(filename,'r')
+    lines = file.readlines()
+    file.close()
+    weaponlist = {"T":[],"S":[],"H":[],"L":[],"E":[],"N":[]}
+    for line in lines:
+        args = line.strip("\n").split("/")
+        out.write(str(args))
+        w = Weapon(args[0],args[1],args[2],args[3],args[4])
+        types = w.types
+        for type in types:
+            weaponlist[type].append(w)
+    return weaponlist

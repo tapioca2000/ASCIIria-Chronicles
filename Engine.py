@@ -2,7 +2,8 @@
 # 
 from Scenario import Scenario
 from Unit import Unit
-from Utilities import textWindow, cursorOnPositions, writeBar, freespace
+from Weapon import Weapon
+from Utilities import *
 import curses
 
 unittypes = {"T":"Tank","S":"Scout","H":"sHocktrooper","L":"Lancer","E":"Engineer","N":"sNiper"} # full unit names
@@ -40,12 +41,13 @@ class Game:
             self.doPlayerTurn()
             self.currentTurn += .5
         else: # enemy turn
-            #self.doEnemyTurn()
+            self.doEnemyTurn()
             self.currentTurn += .5
 
 
     # Pre-game: allow unit selections on self.scenario.openings[]
     def doPreGame(self):
+        self.weapons = readWeaponList("weapons.list")
         openspaces = self.scenario.openings
         while (len(openspaces) > 0): # unit placement loop
             self.scenario.updateMap()
@@ -61,7 +63,7 @@ class Game:
             msgbox.refresh()
             pan.top()
             c = 'placeholder'
-            while (selectionChars.find(c) == -1):
+            while (selectionChars[0:len(openspaces)].find(c) == -1):
                 c = str(unichr(stdscr.getch()))
             del pan
             del msgbox
@@ -127,26 +129,32 @@ class Game:
             elif (ch == curses.KEY_RIGHT): # Highlight unit on the right
                 highlightedunit += 1
                 if (highlightedunit == len(self.scenario.friendlyunits)): highlightedunit = 0
-            elif (ch == 10): # Enter movement mode for this unit
+            elif (ch == 10 and thisTurnCP > 0): # Enter movement mode for this unit
                 thisTurnCP -= 1
                 cpString = "CP: " + ("X "*thisTurnCP)
                 self.movementMode(self.scenario.friendlyunits[highlightedunit])
 
-    # active movement of a unit: TODO
+    # active movement of a unit
     def movementMode(self,unit):
         ap = unitAPs[unit.type]
-
         (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,"[Arrow Keys] move | [F] fire | [S] switch weapon | [E] end movement")
         infoWin.refresh()
         infoPan.top()
-        (apPan,apWin) = writeBar(3,1,curses.COLS-2,("AP: " + ("X "*ap)))
-        curses.panel.update_panels()
-        ch = 99
 
+        weaponSelectIndex = 0
+        weaponlist = self.weapons[unit.type]
+        selectedweapon = weaponlist[weaponSelectIndex]
+        (wepPan,wepWin) = textWindow(30,10,"CURRENT WEAPON\nName " + selectedweapon.name + "\nRange " + selectedweapon.range + "\nAtt " + selectedweapon.att + "\nAcc " + selectedweapon.acc,topLeft=True)
+        wepWin.refresh()
+
+
+        ch = 99
         while (ch != 101):
             self.scenario.updateMap()
             self.map = self.scenario.mapPan()
             self.map.window().refresh()
+            (apPan,apWin) = writeBar(3,1,curses.COLS-2,("AP: " + ("X "*ap)))
+            apWin.refresh()
             curses.panel.update_panels()
 
             ch = stdscr.getch()
@@ -154,17 +162,37 @@ class Game:
             if (ch == 102): # F was pressed, enter fire mode
                 print("TODO")
             elif (ch == 115): # S was pressed, switch weapons
-                print("TODO") # weapons not actually implemented yet
+                weaponSelectIndex += 1
+                if (weaponSelectIndex >= len(weaponlist)): weaponSelectIndex = 0
+                selectedweapon = weaponlist[weaponSelectIndex]
+                del wepPan
+                del wepWin
+                curses.panel.update_panels()
+                (wepPan,wepWin) = textWindow(30,10,"CURRENT WEAPON\nName " + selectedweapon.name + "\nRange " + selectedweapon.range + "\nAtt " + selectedweapon.att + "\nAcc " + selectedweapon.acc,topLeft=True)
+                wepWin.refresh()
 
             elif (ch == curses.KEY_LEFT): # move left
-                if (freespace(self.scenario,[unit.pos[0],unit.pos[1]-1])):
+                if (freespace(self.scenario,[unit.pos[0],unit.pos[1]-1]) and ap > 0):
                     unit.move_left()
+                    ap -= 1
             elif (ch == curses.KEY_RIGHT): # move right
-                if (freespace(self.scenario,[unit.pos[0],unit.pos[1]+1])):
+                if (freespace(self.scenario,[unit.pos[0],unit.pos[1]+1]) and ap > 0):
                     unit.move_right()
+                    ap -= 1
             elif (ch == curses.KEY_UP): # move up
-                if (freespace(self.scenario,[unit.pos[0]-1,unit.pos[1]])):
+                if (freespace(self.scenario,[unit.pos[0]-1,unit.pos[1]]) and ap > 0):
                     unit.move_up()
+                    ap -= 1
             elif (ch == curses.KEY_DOWN): # move down
-                if (freespace(self.scenario,[unit.pos[0]+1,unit.pos[1]])):
+                if (freespace(self.scenario,[unit.pos[0]+1,unit.pos[1]]) and ap > 0):
                     unit.move_down()
+                    ap -= 1
+    
+    # do the enemy's turn. A bit like doPlayerTurn but not exactly.
+    def doEnemyTurn(self):
+        (textPan,textWin) = textWindow(curses.LINES/2,curses.COLS/2,"Enemy turn")
+        textWin.refresh()
+        curses.panel.update_panels()
+        stdscr.getch()
+        del textPan
+        del textWin
