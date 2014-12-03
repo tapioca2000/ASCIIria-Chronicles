@@ -37,7 +37,7 @@ class Scenario:
             self.mapcolors.append(lines[x].strip("\n")[1:len(lines[x]):2])
             col = 0
             for ch in lines[x].strip("\n")[0:len(lines[x]):2]: # initial map setup
-                if (ch == ' '):
+                if (ch == 'O'):
                     pairnumber = 4 # all open spots are blue
                     self.openings.append([x-(c+1), col])
                 else:

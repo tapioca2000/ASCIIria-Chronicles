@@ -211,6 +211,7 @@ class Game:
         infoWin.refresh()
         height, width = self.map.window().getmaxyx()
         positions = []
+        praw = []
         theta = 0
         r = unitRanges[unit.type] + weapon.range
         while (theta < 360):
@@ -219,7 +220,12 @@ class Game:
             if (y >= 0 and y < height and x >= 0 and x < width-1):
                 positions.append([y,x])
                 self.map.window().chgat(y,x,1,curses.color_pair(5))
+            praw.append([x,y]) # every position, regardless of whether or not it's in bounds
             theta += 10
+        for x in range(0,width-1):
+            for y in range(0,height):
+                if (point_inside_polygon(x,y,praw)):
+                    self.map.window().chgat(y,x,1,curses.color_pair(5)) # fill in the circle
         self.map.window().refresh()
         curses.panel.update_panels()
         spot = cursorOnPositions(positions,self.map.window()) # fire on this spot
