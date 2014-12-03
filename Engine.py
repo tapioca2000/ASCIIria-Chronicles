@@ -5,9 +5,12 @@ from Unit import Unit
 from Weapon import Weapon
 from Utilities import *
 import curses
+import math
 
+# important general information on unit types
 unittypes = {"T":"Tank","S":"Scout","H":"sHocktrooper","L":"Lancer","E":"Engineer","N":"sNiper"} # full unit names
 unitAPs = {"T":5,"S":15,"H":7,"L":5,"E":13,"N":6} # unit movement ranges
+unitACCs = {"T":.6,"S":8,"H":.6,"L":.5,"E":.7,"N":.8} # unit base accuracies
 
 selectionChars = "0123456789abcdefghijklmnopqrstuvwxyz" # up to 36 units!
 stdscr = curses.initscr()
@@ -36,7 +39,7 @@ class Game:
     def doNextTurn(self):
         if (self.currentTurn == 0):
             self.doPreGame()
-            self.currentTurn += .5
+            self.currentTurn += 1
         elif (int(self.currentTurn) == self.currentTurn): # player turn
             self.doPlayerTurn()
             self.currentTurn += .5
@@ -63,7 +66,7 @@ class Game:
             msgbox.refresh()
             pan.top()
             c = 'placeholder'
-            while (selectionChars[0:len(openspaces)].find(c) == -1):
+            while (selectionChars[0:len(self.playerUnits)+1].find(c) == -1):
                 c = str(unichr(stdscr.getch()))
             del pan
             del msgbox
@@ -144,7 +147,7 @@ class Game:
         weaponSelectIndex = 0
         weaponlist = self.weapons[unit.type]
         selectedweapon = weaponlist[weaponSelectIndex]
-        (wepPan,wepWin) = textWindow(30,10,"CURRENT WEAPON\nName " + selectedweapon.name + "\nRange " + selectedweapon.range + "\nAtt " + selectedweapon.att + "\nAcc " + selectedweapon.acc,topLeft=True)
+        (wepPan,wepWin) = textWindow(30,10,"CURRENT WEAPON\nName " + selectedweapon.name + "\nRange " + str(selectedweapon.range) + "\nAtt " + str(selectedweapon.att) + "\nAcc " + str(selectedweapon.acc),topLeft=True)
         wepWin.refresh()
 
 
@@ -160,7 +163,7 @@ class Game:
             ch = stdscr.getch()
 
             if (ch == 102): # F was pressed, enter fire mode
-                print("TODO")
+                self.fireMode(unit,selectedweapon)
             elif (ch == 115): # S was pressed, switch weapons
                 weaponSelectIndex += 1
                 if (weaponSelectIndex >= len(weaponlist)): weaponSelectIndex = 0
@@ -168,7 +171,7 @@ class Game:
                 del wepPan
                 del wepWin
                 curses.panel.update_panels()
-                (wepPan,wepWin) = textWindow(30,10,"CURRENT WEAPON\nName " + selectedweapon.name + "\nRange " + selectedweapon.range + "\nAtt " + selectedweapon.att + "\nAcc " + selectedweapon.acc,topLeft=True)
+                (wepPan,wepWin) = textWindow(30,10,"CURRENT WEAPON\nName " + selectedweapon.name + "\nRange " + str(selectedweapon.range) + "\nAtt " + str(selectedweapon.att) + "\nAcc " + str(selectedweapon.acc),topLeft=True)
                 wepWin.refresh()
 
             elif (ch == curses.KEY_LEFT): # move left
@@ -196,3 +199,47 @@ class Game:
         stdscr.getch()
         del textPan
         del textWin
+
+
+    # attack mode (note: this algorithm sucks, TODO fix it)
+    def fireMode(self,unit,weapon):
+        infoString = "[E] exit | [F] fire | [Arrow Kews] adjust aim"
+        (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,infoString)
+        infoWin.refresh()
+        height, width = self.map.window().getmaxyx()
+        firable = []
+        positions = []
+        for x in range(0,height):
+            firable.append([])
+            for y in range(0,width):
+                firable[x].append(False) # fill with False - spots that cannot be fired on
+        r = weapon.range
+        theta = -10
+        while (theta < 360): # populate circle around unit of radius r
+            theta += 10
+            x = int(r*math.cos(theta)) + unit.pos[1]
+            y = int(r*math.sin(theta)) + unit.pos[0]
+            if (y > 0 and x > 0 and y < len(firable) and x < len(firable[x])): firable[y][x] = True
+        for y in range(unit.pos[0] - r,unit.pos[0] + r + 1): # fill in circle
+            painting = False
+            for x in range(0,len(firable[y])):
+                if x and not(painting): # start filling
+                    painting = True
+                elif x and painting: # stop filling
+                    painting = False
+                    positions.append([y,x])
+                    self.map.window().chgat(y,x,1,curses.color_pair(5))
+                if painting: # fill
+                    firable[y][x] = True
+                    positions.append([y,x])
+        self.map.window().refresh()
+        curses.panel.update_panels()
+        spot = cursorOnPositions(positions,self.map.window()) # fire on this spot
+        self.scenario.updateMap()
+        self.map = self.scenario.mapPan()
+        self.map.window().refresh()
+        curses.panel.update_panels()
+        targetunit = self.scenario.unitAtPosition(spot)
+        if targetunit: # unit present at spot
+            targetunit.attacked()
+        

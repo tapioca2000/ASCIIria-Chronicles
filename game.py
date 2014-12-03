@@ -72,8 +72,8 @@ def initColors():
     curses.init_pair(2,curses.COLOR_WHITE,curses.COLOR_BLACK) # white on black (for text bars)
     curses.init_pair(3,curses.COLOR_BLACK,curses.COLOR_YELLOW) # black on yellow (highlighting)
     curses.init_pair(4,curses.COLOR_BLUE,-1) # blue (typically denotes player unit)
+    curses.init_pair(5,curses.COLOR_BLACK,curses.COLOR_YELLOW) # black on green (highlighting)
     curses.init_pair(7,curses.COLOR_BLUE,curses.COLOR_BLUE) # blue on blue (water)
-
 
 # ends the program
 def closeGame():

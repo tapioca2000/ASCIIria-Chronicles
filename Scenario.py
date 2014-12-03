@@ -66,8 +66,15 @@ class Scenario:
         for unit in self.enemyunits:
             self.map.addch(unit.pos[0],unit.pos[1],unit.type,curses.color_pair(1))
 
-    # return map panely
+    # return map panel
     def mapPan(self):
         pan = curses.panel.new_panel(self.map)
         pan.move(self.mapy,self.mapx)
         return pan
+
+    # return unit at position, None if no unit is there
+    def unitAtPosition(self,position):
+        for unit in self.enemyunits.append(self.friendlyunits):
+            if (unit.pos[0] == position[1] and unit.pos[1] == position[1]):
+                return unit
+        return None

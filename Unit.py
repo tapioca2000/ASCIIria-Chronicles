@@ -1,5 +1,9 @@
 # contains the class representing a unit
 
+import random
+
+unitweaknesses = {"T":"L","S":"HN","H":"LN","L":"TN","E":"TSHLN","N":"TSHL"} # unit weaknesses
+
 class Unit:
     
 
@@ -20,3 +24,11 @@ class Unit:
         self.pos[0] -= 1
     def move_down(self):
         self.pos[0] += 1
+
+    # unit has been targeted for attack, calculate and take damage
+    def attacked(acc,att,type):
+        if (randint(0,100) <= (acc*100)): # damage will be done
+            dmg = randint(att-5,att+5)
+            if unitweaknesses[self.type].find(type) >= 0: # this unit is weak to the enenmy unit type
+                dmg += 3
+            self.hp -= dmg
