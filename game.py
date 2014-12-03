@@ -14,20 +14,6 @@ maps = ["Test Map"] # TODO: generate this list by reading for .scn files
 stdscr = curses.initscr()
 curses.curs_set(0)
 
-# draw the borders around the screen, fancily (not used anymore)
-'''
-def drawBorders(char='#'):
-    horizBorder = char * (curses.COLS)
-    menu.addstr(0,0,horizBorder)
-    for y in range(1,curses.LINES-1):
-        menu.refresh()
-        time.sleep(.01)
-        menu.addstr(y,0,char)
-        menu.addstr(y,curses.COLS-1,char)
-    menu.addstr(curses.LINES-1,0,horizBorder[:-1])
-    menu.refresh()
-'''
-
 # do main menu
 def mainMenu():
     string = "ASCIIria Chronicles\n\n1 New Game\n\n2 Select Map\n\n3 Exit"
@@ -72,7 +58,7 @@ def initColors():
     curses.init_pair(2,curses.COLOR_WHITE,curses.COLOR_BLACK) # white on black (for text bars)
     curses.init_pair(3,curses.COLOR_BLACK,curses.COLOR_YELLOW) # black on yellow (highlighting)
     curses.init_pair(4,curses.COLOR_BLUE,-1) # blue (typically denotes player unit)
-    curses.init_pair(5,curses.COLOR_BLACK,curses.COLOR_YELLOW) # black on green (highlighting)
+    curses.init_pair(5,curses.COLOR_BLACK,curses.COLOR_GREEN) # black on green (highlighting)
     curses.init_pair(7,curses.COLOR_BLUE,curses.COLOR_BLUE) # blue on blue (water)
 
 # ends the program

@@ -218,7 +218,7 @@ class Game:
             y = int(r*math.sin(math.radians(theta))) + unit.pos[0]
             if (y >= 0 and y < height and x >= 0 and x < width-1):
                 positions.append([y,x])
-                self.map.window().chgat(y,x,1,curses.color_pair(3))
+                self.map.window().chgat(y,x,1,curses.color_pair(5))
             theta += 10
         self.map.window().refresh()
         curses.panel.update_panels()

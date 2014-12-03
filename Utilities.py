@@ -9,11 +9,14 @@ curses.use_default_colors()
 # Allow the user to use a cursor to select between the given positions
 # Returns the index of the position selected
 def cursorOnPositions(positions, window):
+    outfile = open("oot.txt",'w')
     selecting = True
     posit = 0
     y = positions[posit][0]
     x = positions[posit][1]
     while selecting:
+        originalattrs = (window.inch(y,x) >> 8) & 0xFF
+        outfile.write(str(originalattrs) + "\n")
         window.chgat(y,x,1,curses.color_pair(3))
         window.refresh()
         ch = stdscr.getch()
@@ -27,10 +30,9 @@ def cursorOnPositions(positions, window):
             if (posit+1 == len(positions)):
                 posit = -1
             posit += 1
-        window.chgat(y,x,1,curses.color_pair(0))
+        window.chgat(y,x,1,curses.color_pair(originalattrs))
         y = positions[posit][0]
         x = positions[posit][1]
-        window.refresh()
     return posit
 
 # Creates a new window, displays text centered around (y,x) and returns the window for potential usage
