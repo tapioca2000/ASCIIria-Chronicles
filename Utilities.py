@@ -77,14 +77,14 @@ def freespace(scenario,pos):
 
 # create the weapons dictionary by reading from weapons.list, return it
 def readWeaponList(filename):
-    out = open("out.txt",'w')
+    outfile = open("outfile.txt",'w')
     file = open(filename,'r')
     lines = file.readlines()
     file.close()
     weaponlist = {"T":[],"S":[],"H":[],"L":[],"E":[],"N":[]}
     for line in lines:
         args = line.strip("\n").split("/")
-        out.write(str(args))
+        outfile.write(str(args) + "\n")
         w = Weapon(args[0],args[1],args[2],args[3],args[4])
         types = w.types
         for type in types:

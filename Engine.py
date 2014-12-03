@@ -1,5 +1,6 @@
 # Coordinates elements of a functioning game
-# 
+# most of the game happens here
+ 
 from Scenario import Scenario
 from Unit import Unit
 from Weapon import Weapon
@@ -11,6 +12,7 @@ import math
 unittypes = {"T":"Tank","S":"Scout","H":"sHocktrooper","L":"Lancer","E":"Engineer","N":"sNiper"} # full unit names
 unitAPs = {"T":5,"S":15,"H":7,"L":5,"E":13,"N":6} # unit movement ranges
 unitACCs = {"T":.6,"S":8,"H":.6,"L":.5,"E":.7,"N":.8} # unit base accuracies
+unitRanges = {"T":7,"S":5,"H":4,"L":4,"E":3,"N":9} # unit ranges
 
 selectionChars = "0123456789abcdefghijklmnopqrstuvwxyz" # up to 36 units!
 stdscr = curses.initscr()
@@ -203,35 +205,21 @@ class Game:
 
     # attack mode (note: this algorithm sucks, TODO fix it)
     def fireMode(self,unit,weapon):
+        outfile = open("out.txt",'w')
         infoString = "[E] exit | [F] fire | [Arrow Kews] adjust aim"
         (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,infoString)
         infoWin.refresh()
         height, width = self.map.window().getmaxyx()
-        firable = []
         positions = []
-        for x in range(0,height):
-            firable.append([])
-            for y in range(0,width):
-                firable[x].append(False) # fill with False - spots that cannot be fired on
-        r = weapon.range
-        theta = -10
-        while (theta < 360): # populate circle around unit of radius r
+        theta = 0
+        r = unitRanges[unit.type] + weapon.range
+        while (theta < 360):
+            x = int(r*math.cos(math.radians(theta))) + unit.pos[1]
+            y = int(r*math.sin(math.radians(theta))) + unit.pos[0]
+            if (y >= 0 and y < height and x >= 0 and x < width-1):
+                positions.append([y,x])
+                self.map.window().chgat(y,x,1,curses.color_pair(3))
             theta += 10
-            x = int(r*math.cos(theta)) + unit.pos[1]
-            y = int(r*math.sin(theta)) + unit.pos[0]
-            if (y > 0 and x > 0 and y < len(firable) and x < len(firable[x])): firable[y][x] = True
-        for y in range(unit.pos[0] - r,unit.pos[0] + r + 1): # fill in circle
-            painting = False
-            for x in range(0,len(firable[y])):
-                if x and not(painting): # start filling
-                    painting = True
-                elif x and painting: # stop filling
-                    painting = False
-                    positions.append([y,x])
-                    self.map.window().chgat(y,x,1,curses.color_pair(5))
-                if painting: # fill
-                    firable[y][x] = True
-                    positions.append([y,x])
         self.map.window().refresh()
         curses.panel.update_panels()
         spot = cursorOnPositions(positions,self.map.window()) # fire on this spot
@@ -240,6 +228,7 @@ class Game:
         self.map.window().refresh()
         curses.panel.update_panels()
         targetunit = self.scenario.unitAtPosition(spot)
+        att = unit.att + weapon.att
+        acc = unitACCs[unit.type] + weapon.acc
         if targetunit: # unit present at spot
-            targetunit.attacked()
-        
+            targetunit.attacked(acc,att,unit.type)
