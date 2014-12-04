@@ -1,6 +1,6 @@
 # contains the class representing a unit
 
-import random
+from random import randint
 
 unitweaknesses = {"T":"L","S":"HN","H":"LN","L":"TN","E":"TSHLN","N":"TSHL"} # unit weaknesses
 
@@ -10,8 +10,8 @@ class Unit:
     def __init__(self,name,type,hp,att,pos,friendly):
         self.name = name
         self.type = type
-        self.hp = hp
-        self.att = att
+        self.hp = int(hp)
+        self.att = int(att)
         self.pos = pos
         self.friendly = friendly
 

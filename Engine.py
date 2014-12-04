@@ -99,7 +99,7 @@ class Game:
         
         redoInfo = False
         thisunit = self.scenario.friendlyunits[highlightedunit]
-        unitinfo = "Name " + thisunit.name + "\nType " + unittypes[thisunit.type] + "\nHealth " + thisunit.hp + "\nAttack " + thisunit.att
+        unitinfo = "Name " + thisunit.name + "\nType " + unittypes[thisunit.type] + "\nHealth " + str(thisunit.hp) + "\nAttack " + str(thisunit.att)
         (unitPan,unitWin) = textWindow(20,20,unitinfo,topLeft=True)
         unitWin.refresh()
 
@@ -109,7 +109,7 @@ class Game:
                 del unitWin
                 curses.panel.update_panels()
                 thisunit = self.scenario.friendlyunits[highlightedunit]
-                unitinfo = "Name " + thisunit.name + "\nType " + unittypes[thisunit.type] + "\nHealth " + thisunit.hp + "\nAttack "+ thisunit.att
+                unitinfo = "Name " + thisunit.name + "\nType " + unittypes[thisunit.type] + "\nHealth " + str(thisunit.hp) + "\nAttack "+ str(thisunit.att)
                 (unitPan,unitWin) = textWindow(20,20,unitinfo,topLeft=True)
                 unitWin.refresh()
                 redoInfo = False
@@ -205,8 +205,7 @@ class Game:
 
     # attack mode (note: this algorithm sucks, TODO fix it)
     def fireMode(self,unit,weapon):
-        outfile = open("out.txt",'w')
-        infoString = "[E] exit | [F] fire | [Arrow Kews] adjust aim"
+        infoString = "[E] exit | [Enter] fire | [Arrow Kews] adjust aim"
         (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,infoString)
         infoWin.refresh()
         height, width = self.map.window().getmaxyx()
@@ -220,20 +219,22 @@ class Game:
             if (y >= 0 and y < height and x >= 0 and x < width-1):
                 positions.append([y,x])
                 self.map.window().chgat(y,x,1,curses.color_pair(5))
-            praw.append([x,y]) # every position, regardless of whether or not it's in bounds
+            praw.append([x,y]) # every position on the edge of the circle, regardless of whether or not it's in bounds
             theta += 10
         for x in range(0,width-1):
             for y in range(0,height):
                 if (point_inside_polygon(x,y,praw)):
+                    positions.append([y,x])
                     self.map.window().chgat(y,x,1,curses.color_pair(5)) # fill in the circle
         self.map.window().refresh()
         curses.panel.update_panels()
-        spot = cursorOnPositions(positions,self.map.window()) # fire on this spot
+        positions = removeDupes(positions)
+        spot = cursorOnPositions(positions, self.map.window()) # fire on this spot
         self.scenario.updateMap()
         self.map = self.scenario.mapPan()
         self.map.window().refresh()
         curses.panel.update_panels()
-        targetunit = self.scenario.unitAtPosition(spot)
+        targetunit = self.scenario.unitAtPosition(positions[spot])
         att = unit.att + weapon.att
         acc = unitACCs[unit.type] + weapon.acc
         if targetunit: # unit present at spot

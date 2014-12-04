@@ -2,6 +2,7 @@
 # handles basically everything relating to the map and its current state
 
 from Unit import Unit
+from random import randint
 import curses
 
 curses.initscr()
@@ -74,7 +75,8 @@ class Scenario:
 
     # return unit at position, None if no unit is there
     def unitAtPosition(self,position):
-        for unit in self.enemyunits.append(self.friendlyunits):
-            if (unit.pos[0] == position[1] and unit.pos[1] == position[1]):
+        allunits = self.friendlyunits + self.enemyunits
+        for unit in allunits:
+            if (unit.pos[0] == position[0] and unit.pos[1] == position[1]):
                 return unit
         return None

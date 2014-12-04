@@ -9,7 +9,6 @@ curses.use_default_colors()
 # Allow the user to use a cursor to select between the given positions
 # Returns the index of the position selected
 def cursorOnPositions(positions, window):
-    outfile = open("oot.txt",'w')
     positions = removeDupes(positions)
     selecting = True
     posit = 0
@@ -17,7 +16,6 @@ def cursorOnPositions(positions, window):
     x = positions[posit][1]
     while selecting:
         originalattrs = (window.inch(y,x) >> 8) & 0xFF
-        outfile.write(str(originalattrs) + "\n")
         window.chgat(y,x,1,curses.color_pair(3))
         window.refresh()
         ch = stdscr.getch()
@@ -80,14 +78,12 @@ def freespace(scenario,pos):
 
 # create the weapons dictionary by reading from weapons.list, return it
 def readWeaponList(filename):
-    outfile = open("outfile.txt",'w')
     file = open(filename,'r')
     lines = file.readlines()
     file.close()
     weaponlist = {"T":[],"S":[],"H":[],"L":[],"E":[],"N":[]}
     for line in lines:
         args = line.strip("\n").split("/")
-        outfile.write(str(args) + "\n")
         w = Weapon(args[0],args[1],args[2],args[3],args[4])
         types = w.types
         for type in types:
