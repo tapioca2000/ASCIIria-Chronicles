@@ -192,6 +192,9 @@ class Game:
                 if (freespace(self.scenario,[unit.pos[0]+1,unit.pos[1]]) and ap > 0):
                     unit.move_down()
                     ap -= 1
+        del wepPan
+        del wepWin
+        curses.panel.update_panels()
     
     # do the enemy's turn. A bit like doPlayerTurn but not exactly.
     def doEnemyTurn(self):
@@ -239,3 +242,6 @@ class Game:
         acc = unitACCs[unit.type] + weapon.acc
         if targetunit: # unit present at spot
             targetunit.attacked(acc,att,unit.type)
+        del infoPan
+        del infoWin
+        curses.panel.update_panels()
