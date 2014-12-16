@@ -5,6 +5,7 @@ from Scenario import Scenario
 from Unit import Unit
 from Weapon import Weapon
 from Utilities import *
+from time import sleep
 import curses
 import math
 
@@ -26,6 +27,7 @@ class Game:
         self.map = map
         self.currentTurn = 0
         self.cp = 0
+        self.enemycp = 4
         file = open('units.list','r')
         lines = file.readlines()
         self.playerUnits = []
@@ -85,8 +87,6 @@ class Game:
 
     # Do a player turn
     def doPlayerTurn(self):
-
-
         infoString = "[e] End Turn | [Arrow Keys] Select Unit | [Enter] Use Unit"
         thisTurnCP = self.cp
         cpString = "CP: " + ("X "*thisTurnCP)
@@ -121,12 +121,9 @@ class Game:
             (cpPan,cpWin) = writeBar(3,1,curses.COLS-2,cpString)
             cpWin.refresh()
             infoWin.refresh()
-
-
             curses.panel.update_panels()
 
             ch = stdscr.getch()
-
             redoInfo = (ch == curses.KEY_LEFT or ch == curses.KEY_RIGHT) # redo unit info panel if new unit selected
             if (ch == curses.KEY_LEFT): # Highlight unit on the left
                 highlightedunit -= 1
@@ -138,9 +135,16 @@ class Game:
                 thisTurnCP -= 1
                 cpString = "CP: " + ("X "*thisTurnCP)
                 self.movementMode(self.scenario.friendlyunits[highlightedunit])
+        del cpPan
+        del cpWin
+        del unitPan
+        del unitWin
+        del infoPan
+        del infoWin
+        curses.panel.update_panels()
 
     # active movement of a unit
-    def movementMode(self,unit):
+    def movementMode(self,unit,moveList=None):
         ap = unitAPs[unit.type]
         (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,"[Arrow Keys] move | [F] fire | [S] switch weapon | [E] end movement")
         infoWin.refresh()
@@ -154,6 +158,7 @@ class Game:
 
 
         ch = 99
+        counter = 0
         while (ch != 101):
             self.scenario.updateMap()
             self.map = self.scenario.mapPan()
@@ -161,11 +166,19 @@ class Game:
             (apPan,apWin) = writeBar(3,1,curses.COLS-2,("AP: " + ("X "*ap)))
             apWin.refresh()
             curses.panel.update_panels()
-
-            ch = stdscr.getch()
-
+            if not moveList:
+                ch = stdscr.getch()
+            else:
+                ch = moveList[counter]
+                counter += 1
+                sleep(.75)
             if (ch == 102): # F was pressed, enter fire mode
-                self.fireMode(unit,selectedweapon)
+                if not moveList:
+                    self.fireMode(unit,selectedweapon)
+                else:
+                    counter += 1
+                    self.fireMode(unit,selectedweapon,moveList[counter])
+                    counter += 1
             elif (ch == 115): # S was pressed, switch weapons
                 weaponSelectIndex += 1
                 if (weaponSelectIndex >= len(weaponlist)): weaponSelectIndex = 0
@@ -196,18 +209,144 @@ class Game:
         del wepWin
         curses.panel.update_panels()
     
-    # do the enemy's turn. A bit like doPlayerTurn but not exactly.
+    # do the enemy's turn. Select what we want to do, select who to do it, do it.
     def doEnemyTurn(self):
-        (textPan,textWin) = textWindow(curses.LINES/2,curses.COLS/2,"Enemy turn")
-        textWin.refresh()
+        thisTurnCP = self.enemycp
+        cpStr = "CP: " + ("X "*thisTurnCP)
+        (cpPan,cpWin) = writeBar(1,3,curses.COLS-2,cpStr)
+        cpWin.refresh()
         curses.panel.update_panels()
-        stdscr.getch()
-        del textPan
-        del textWin
+        while (thisTurnCP > 0):
+            moveType = self.determineMove() # 0 - defend flag, 1 - attack enemy flag, 2 - attack unit, 3 - heal tank
+            uI,target = self.getBestUnit(moveType)
+            if not uI: continue
+            unit = self.scenario.enemyunits[uI]
+            movelist = self.getMoves(moveType,unit,target)
+            self.movementMode(unit,moveList=movelist)
+            thisTurnCP -= 1
+    def determineMove(self): # Step 1 - determine the type of move to do
+        movetype = 0
+        tanks = [x for x in self.scenario.enemyunits if x.type = 'T']
+        for tank in tanks:
+            if tank.hp <= 500: return 3 # tank needs healing
+        eflag = self.scenario.eflag
+        pflag = self.scenario.pflag
+        pflagUnattended = True
+        eflagUnattended = True
+        for unit in (self.scenario.enemyunits + self.scenario.playerunits):
+            pflagdist = math.sqrt(math.pow(pflag[0] - unit.pos[0],2) + math.pow(pflag[1] - unit.pos[1],2))
+            eflagdist = math.sqrt(math.pow(eflag[0] - unit.pos[0],2) + math.pow(pflag[1] - unit.pos[1],2))
+            if (unit.friendly and pflagdist < 10):
+                pflagUnattended = False
+            elif (unit.friendly and eflagdist < 5 and not eflagUnattended): # active flag defense
+                return 2
+            elif (unit.friendly and eflagdist < 5): # move to defend flag
+                return 0
+        if pflagUnattended: # player flag is unattended, attack it
+            return 1
+        return 2 # unsure of what to do, attack something
+    def getBestUnit(self,movetype): # step 2 - determine the unit to do the move
+        if (movetype == 0 or movetype == 1): # defend/attack the flag - select best unit for the job
+            if (movetype == 0): flag = self.scenario.eflag
+            else: flag = self.scenario.pflag
+            weights = [0 for x in self.scenario.enemyunits]
+            minUnitI = 0
+            minDist = -1
+            maxStr = 0
+            maxStrI = 0
+            for x in range(0,len(weights)):
+                unit = self.scenario.enemyunits[x]
+                flagdist = math.sqrt(math.pow(flag[0] - unit.pos[0],2) + math.pow(flag[1] - unit.pos[1],2))
+                if (flagdist < minDist):
+                    minUnitI = x
+                    minDist = flagdist
+                str = unit.att
+                if (str > maxStr):
+                    maxStrI = x
+                    maxStr = str
+            weights[minUnitI] += 3
+            weights[maxStrI] += 2
+            overallMaxI = 0
+            for x in range(0,len(weights)):
+                if (weights[x] > weights[overallMaxI]):
+                    overallMaxI = x
+            return overallMaxI, flag
+        elif (movetype == 3): # heal the tank - find the engineer
+            injuredTank = None
+            tanks = [x for x in self.scenario.enemyunits where x.type == 'T']
+            for tank in tanks:
+                if tank.hp < 500: injuredTank = tank
+            pos = injuredTank.pos
+            engineers = [x for x in self.scenario.enemyunits where x.type == 'E']
+            mindist = 0
+            mindistI = 0
+            for x in range(0,len(engineers)):
+                eng = engineers[x]
+                dist = math.sqrt(math.pow(pos[0] - eng.pos[0],2) + math.pow(pos[1] - eng.pos[1],2))
+                if (dist < mindist):
+                    mindist = dist
+                    mindistI = x
+            return mindistI,pos
+        elif (movetype == 2): # attack another unit
+            weights = [0 for x in self.scenario.enemyunits]
+            targets = {}
+            c = 0
+            for unit in self.scenario.enemyunits:
+                pos = unit.pos
+                closestunit = None
+                closestdist = 999999
+                for punit in self.scenario.friendlyunits:
+                    dist = Math.sqrt(Math.pow(punit.pos[0] - pos[0],2) + Math.pow(punit.pos[1] - pos[1],2))
+                    if (dist < closestdist):
+                        closestunit = punit
+                        closestdist = dist
+                if not closestunit: continue
+                targets[unit] = closestunit
+                if (closestdist > 10): # too far, ignore
+                    weights[c] = -999
+                else:
+                    weights[c] += (unit.att - closestunit.att)
+                c += 1
+            maxI = 0
+            for x in range(0,len(weights)):
+                if (weights[x] > weights[0]):
+                    maxI = x
+            if maxI < 0: return [None,None] # don't do it, there are no units that can attack.
+            return [maxI,targets[self.scenario.enemyunits[maxI]]]
+    def getMoves(self,movetype,unit,target): # step 3 - generate the actions the unit should take
+        poslist = pathfind(unit.pos,target)
+        if (movetype == 3):
+            poslist.append(switchToWrench(self))
+            poslist.append('F')
+            poslist.append(target)
+        elif (movetype == 2):
+            poslist += self.switchToStrongestWeapon(unit.type))
+            poslist.append('F')
+            poslist.append(target)
+        elif (movetype == 1):
+            poslist.append('T')
+        return poslist
+    def pathfind(start,end): # find the shortest path!
+        print("TODO!!! It'll be djikstra's algorithm")
+    def switchToStrongestWeapon(self,type):
+        maxwep = self.weapons[type][0]
+        maxI = 0
+        c = 0
+        for weapon in self.weapons[type]:
+            if weapon.att > maxwep.att:
+                maxwep = weapon
+                maxI = c
+            c += 1
+        return [115]*maxI
+    def switchToWrench(self):
+        cmd = []
+        for weapon in self.weapon[type]:
+            if (weapon.name == "Wrench"): return cmd
+            cmd.append(115)
+        return []
 
-
-    # attack mode (note: this algorithm sucks, TODO fix it)
-    def fireMode(self,unit,weapon):
+    # unit attack mode
+    def fireMode(self,unit,weapon,target=None):
         infoString = "[E] exit | [Enter] fire | [Arrow Kews] adjust aim"
         (infoPan,infoWin) = writeBar(1,1,curses.COLS-2,infoString)
         infoWin.refresh()

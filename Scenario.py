@@ -33,6 +33,8 @@ class Scenario:
         self.map = curses.newwin(maplength,maplength + 1) # map, without any units
         self.mapcolors = []
         self.openings = []
+        self.pflag = []
+        self.eflag = []
         for x in range(c+1,c+maplength+1): # create rawmap, mapcolors
             self.rawmap.append(lines[x].strip("\n")[0:len(lines[x]):2])
             self.mapcolors.append(lines[x].strip("\n")[1:len(lines[x]):2])
@@ -41,6 +43,13 @@ class Scenario:
                 if (ch == 'O'):
                     pairnumber = 4 # all open spots are blue
                     self.openings.append([x-(c+1), col])
+                elif (ch == 'F'): # set flag positions
+                    if (int(self.mapcolors[x-(c+1)][col]) == 4): 
+                        self.pflag = [x-(c+1),col]
+                        pairnumber = 4
+                    else:
+                        self.eflag = [x-(c+1),col]
+                        pairnumber = 1
                 else:
                     pairnumber = int(self.mapcolors[x-(c+1)][col]) # use given color
                 self.map.addch(x-(c+1),col,ch,curses.color_pair(pairnumber))
